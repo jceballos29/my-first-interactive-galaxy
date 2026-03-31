@@ -1,0 +1,106 @@
+==========================================
+ERRORES CORREGIDOS — Mi Primera Galaxia Interactiva
+Estudiante : Juan Ceballos
+Fecha      : 28 de marzo de 2026
+Fase       : 3 — Depuración y Resiliencia
+==========================================
+
+ERROR #1
+--------
+Síntoma:
+    Al hacer clic repetidamente en el canvas, el navegador se congela
+    completamente y la pestaña deja de responder. Hay que forzar el cierre
+    de la pestaña para continuar.
+
+Mensaje en consola:
+    (Sin mensaje de error rojo — el tipo de error es lógico, no de sintaxis)
+    El navegador muestra "La página no responde" después de varios clics.
+
+Línea afectada:
+    Dentro de la función draw(), en el bucle de actualización (aprox. línea 570).
+
+Causa real:
+    El bucle de eliminación de estrellas usaba i++ en lugar de i--.
+    Al iterar hacia adelante (i = 0; i < stars.length; i++) y eliminar un
+    elemento con splice(i, 1), el siguiente elemento "sube" al índice i y
+    no se procesa; peor aún, si la condición isDead() siempre se cumple
+    (o si por bug la vida no decrementa correctamente), el array nunca
+    se vacía y el bucle se convierte en infinito, bloqueando el hilo principal.
+
+    Código con error:
+        for (let i = 0; i < stars.length; i++) {
+            stars[i].update();
+            stars[i].display();
+            if (stars[i].isDead()) {
+                stars.splice(i, 1);   // ← al eliminar, el índice i+1 pasa a ser i
+                                       //    y se salta sin procesar; con i++ el
+                                       //    contador se desfasa indefinidamente
+            }
+        }
+
+Solución:
+    Cambiar i++ por i-- e iterar al revés, desde el último elemento al
+    primero. Así, al eliminar el elemento en la posición i, no se afectan
+    los índices de los elementos ya procesados (los que están antes).
+
+    Código corregido:
+        for (let i = stars.length - 1; i >= 0; i--) {
+            stars[i].update();
+            stars[i].display();
+            if (stars[i].isDead()) {
+                stars.splice(i, 1);   // ✅ seguro: afecta solo índices mayores
+            }
+        }
+
+Tipo de error: Lógico (el código es sintácticamente válido pero produce
+               comportamiento incorrecto que congela el navegador).
+
+==========================================
+
+ERROR #2
+--------
+Síntoma:
+    Al abrir el archivo en el navegador, el canvas de p5.js aparece al
+    final del body (debajo de toda la UI) en lugar de comportarse como
+    fondo de pantalla. Las estrellas se ven en una franja estrecha al pie
+    de la página, no cubren toda la ventana.
+
+Mensaje en consola:
+    (Sin error rojo en consola, pero al inspeccionar el DOM con F12 →
+    Elements, el elemento <canvas> aparece suelto al final de <body>,
+    fuera del div #p5-container.)
+
+Línea afectada:
+    Dentro de la función setup(), en la llamada a canvas.parent()
+    (aprox. línea 530).
+
+Causa real:
+    El ID pasado a canvas.parent() no coincide con el ID del div en el HTML.
+    El div receptor tiene id="p5-container" pero el argumento era
+    'canvas-contenedor' (un ID que no existe en el DOM).
+    Cuando p5.js no encuentra el elemento padre, adjunta el canvas
+    directamente al final del body.
+
+    Código con error:
+        function setup() {
+            let canvas = createCanvas(windowWidth, windowHeight);
+            canvas.parent('canvas-contenedor');  // ← ID incorrecto, no existe
+            ...
+        }
+
+Solución:
+    Cambiar el argumento de canvas.parent() para que coincida exactamente
+    con el id del div de fondo definido en el HTML.
+
+    Código corregido:
+        function setup() {
+            let canvas = createCanvas(windowWidth, windowHeight);
+            canvas.parent('p5-container');  // ✅ ID correcto del div de fondo
+            ...
+        }
+
+Tipo de error: Referencia (se usa un identificador que no existe en el DOM;
+               JavaScript no lanza excepción pero el comportamiento es incorrecto).
+
+==========================================
+FIN DEL DOCUMENTO

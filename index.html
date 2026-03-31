@@ -1,0 +1,877 @@
+<!doctype html>
+<html class="dark" lang="es">
+	<head>
+		<meta charset="utf-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0"
+		/>
+		<title>Mi Galaxia — Llamas Cósmicas · Juan Ceballos</title>
+
+		<!-- ── BLOQUE 0: Tailwind CDN ── -->
+		<script src="https://cdn.tailwindcss.com"></script>
+
+		<!-- ── BLOQUE 0: Configuración del tema "Cosmos" ── -->
+		<script>
+			tailwind.config = {
+				darkMode: 'class',
+				theme: {
+					extend: {
+						// Personalización Fase 2: Paleta "Llamas Cósmicas"
+						colors: {
+							surface: '#0c0200',
+							primary: '#fb923c',
+							'on-surface': '#fde8d8',
+							'surface-variant': '#2d0c06',
+						},
+						fontFamily: {
+							sans: ['Inter', 'system-ui', 'sans-serif'],
+							mono: ['Fira Code', 'monospace'],
+						},
+					},
+				},
+			};
+		</script>
+
+		<!-- Fuentes -->
+		<link
+			href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;800&display=swap"
+			rel="stylesheet"
+		/>
+
+		<style>
+			/* ── BLOQUE 0: Estilos base ── */
+			html {
+				scroll-behavior: smooth;
+				user-select: none;
+			}
+
+			/* Glow effect para el título — Llamas Cósmicas */
+			.title-glow {
+				text-shadow:
+					0 0 40px rgba(251, 146, 60, 0.7),
+					0 0 80px rgba(251, 146, 60, 0.4);
+			}
+
+			/* Glassmorphism card — tono naranja-rojo */
+			.glass-card {
+				background: rgba(45, 12, 6, 0.6);
+				backdrop-filter: blur(20px);
+				-webkit-backdrop-filter: blur(20px);
+				border: 1px solid rgba(251, 146, 60, 0.2);
+				box-shadow:
+					0 8px 40px rgba(180, 50, 10, 0.3),
+					inset 0 1px 0 rgba(255, 255, 255, 0.06);
+			}
+
+			/* Botones de color con ring de foco visible */
+			.color-btn {
+				transition:
+					transform 0.15s ease,
+					box-shadow 0.15s ease;
+				position: relative;
+				overflow: hidden;
+			}
+			.color-btn::after {
+				content: '';
+				position: absolute;
+				inset: 0;
+				background: rgba(255, 255, 255, 0.08);
+				opacity: 0;
+				transition: opacity 0.15s;
+			}
+			.color-btn:hover::after {
+				opacity: 1;
+			}
+			.color-btn:hover {
+				transform: translateY(-2px) scale(1.03);
+			}
+			.color-btn:active {
+				transform: translateY(0) scale(0.97);
+			}
+			.color-btn.active {
+				box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.8);
+			}
+
+			/* Botón de modo galaxia (Fase 2) */
+			.mode-btn {
+				transition: all 0.2s ease;
+				position: relative;
+				overflow: hidden;
+			}
+			.mode-btn::after {
+				content: '';
+				position: absolute;
+				inset: 0;
+				background: rgba(255, 255, 255, 0.07);
+				opacity: 0;
+				transition: opacity 0.15s;
+			}
+			.mode-btn:hover::after {
+				opacity: 1;
+			}
+			.mode-btn:hover {
+				transform: translateY(-2px);
+			}
+			.mode-btn:active {
+				transform: scale(0.95);
+			}
+			.mode-btn.activo {
+				box-shadow:
+					0 0 0 2px rgba(251, 146, 60, 0.9),
+					0 0 14px rgba(251, 146, 60, 0.3);
+			}
+
+			/* Badge de paso */
+			.step-badge {
+				font-size: 0.6rem;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+			}
+
+			/* Stat card */
+			.stat-card {
+				background: rgba(45, 12, 6, 0.4);
+				border: 1px solid rgba(251, 146, 60, 0.15);
+				transition: border-color 0.3s;
+			}
+			.stat-card:hover {
+				border-color: rgba(251, 146, 60, 0.4);
+			}
+
+			/* Canvas ocupa toda la pantalla de fondo */
+			#p5-container canvas {
+				display: block !important;
+			}
+
+			/* Animación de entrada */
+			@keyframes fadeUp {
+				from {
+					opacity: 0;
+					transform: translateY(24px);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
+			}
+			.fade-up {
+				animation: fadeUp 0.7s ease both;
+			}
+			.fade-up-1 {
+				animation-delay: 0.1s;
+			}
+			.fade-up-2 {
+				animation-delay: 0.25s;
+			}
+			.fade-up-3 {
+				animation-delay: 0.4s;
+			}
+			.fade-up-4 {
+				animation-delay: 0.55s;
+			}
+			.fade-up-5 {
+				animation-delay: 0.7s;
+			}
+
+			/* Indicador de color activo en header */
+			#active-color-dot {
+				transition: background-color 0.3s ease;
+				box-shadow: 0 0 8px currentColor;
+			}
+
+			/* Slider de partículas */
+			input[type='range'] {
+				-webkit-appearance: none;
+				appearance: none;
+				width: 100%;
+				height: 4px;
+				border-radius: 2px;
+				background: rgba(251, 146, 60, 0.2);
+				outline: none;
+			}
+			input[type='range']::-webkit-slider-thumb {
+				-webkit-appearance: none;
+				width: 16px;
+				height: 16px;
+				border-radius: 50%;
+				background: #fb923c;
+				cursor: pointer;
+				box-shadow: 0 0 6px rgba(251, 146, 60, 0.7);
+			}
+			input[type='range']::-moz-range-thumb {
+				width: 16px;
+				height: 16px;
+				border-radius: 50%;
+				background: #fb923c;
+				cursor: pointer;
+				border: none;
+			}
+		</style>
+	</head>
+
+	<!-- ── BLOQUE 0: Body con tema oscuro ── -->
+	<body
+		class="bg-surface text-on-surface min-h-screen overflow-x-hidden font-sans"
+	>
+		<!-- ── BLOQUE 1: Contenedor para p5.js (canvas de fondo) ── -->
+		<div id="p5-container" class="fixed inset-0 -z-10"></div>
+
+		<!-- ── BLOQUES 0-5: Interfaz por encima del canvas ── -->
+		<main
+			class="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-16"
+		>
+			<div class="w-full max-w-xl space-y-6">
+				<!-- ─── HEADER ─── -->
+				<div class="text-center space-y-3 fade-up fade-up-1">
+					<div class="flex items-center justify-center gap-2 mb-1">
+						<!-- Indicador de color activo -->
+						<span
+							id="active-color-dot"
+							class="inline-block w-3 h-3 rounded-full bg-primary"
+						></span>
+						<span
+							class="text-on-surface/50 text-sm font-mono step-badge"
+							>p5.js + Tailwind CSS</span
+						>
+					</div>
+
+					<h1
+						class="text-6xl md:text-7xl font-extrabold text-primary title-glow tracking-tight"
+					>
+						Galaxia
+					</h1>
+					<p
+						class="text-on-surface/60 text-sm max-w-xs mx-auto leading-relaxed"
+					>
+						Paleta
+						<strong class="text-primary">Llamas Cósmicas</strong> —
+						haz clic en el canvas para lanzar estrellas.
+					</p>
+				</div>
+
+				<!-- ─── CARD DE MODOS (Fase 2: nuevo) ─── -->
+				<div class="glass-card rounded-2xl p-5 fade-up fade-up-2">
+					<div class="flex items-center justify-between mb-4">
+						<h2 class="text-base font-semibold text-primary">
+							Modos de Galaxia
+						</h2>
+						<span
+							id="modo-label"
+							class="px-3 py-1 bg-primary/15 text-primary text-xs rounded-full font-mono"
+							>Libre</span
+						>
+					</div>
+					<div class="grid grid-cols-3 gap-2 mb-2">
+						<button
+							id="btn-nebulosa"
+							class="mode-btn py-3 px-2 rounded-xl bg-blue-500/15 border border-blue-400/25 text-center"
+							onclick="cambiarModo('nebulosa', this)"
+							aria-label="Modo Nebulosa"
+						>
+							<span class="block text-lg mb-1">🌌</span>
+							<span class="text-xs font-semibold text-blue-300"
+								>Nebulosa</span
+							>
+						</button>
+						<button
+							id="btn-constelacion"
+							class="mode-btn py-3 px-2 rounded-xl bg-yellow-500/15 border border-yellow-400/25 text-center"
+							onclick="cambiarModo('constelacion', this)"
+							aria-label="Modo Constelación"
+						>
+							<span class="block text-lg mb-1">✨</span>
+							<span class="text-xs font-semibold text-yellow-300"
+								>Constelación</span
+							>
+						</button>
+						<button
+							id="btn-supernova"
+							class="mode-btn py-3 px-2 rounded-xl bg-orange-500/15 border border-orange-400/25 text-center"
+							onclick="cambiarModo('supernova', this)"
+							aria-label="Modo Supernova"
+						>
+							<span class="block text-lg mb-1">💥</span>
+							<span class="text-xs font-semibold text-orange-300"
+								>Supernova</span
+							>
+						</button>
+					</div>
+					<div class="grid grid-cols-2 gap-2">
+						<button
+							id="btn-apagar"
+							class="mode-btn py-2 px-3 rounded-xl bg-red-500/15 border border-red-400/25 flex items-center justify-center gap-2"
+							onclick="cambiarModo('apagar', this)"
+							aria-label="Pausar animación"
+						>
+							<span class="text-sm">⏸</span>
+							<span
+								class="text-xs font-semibold text-red-300"
+								id="apagar-label"
+								>Pausar</span
+							>
+						</button>
+						<button
+							id="btn-limpiar"
+							class="mode-btn py-2 px-3 rounded-xl bg-gray-500/15 border border-gray-400/25 flex items-center justify-center gap-2"
+							onclick="cambiarModo('limpiar', this)"
+							aria-label="Limpiar partículas"
+						>
+							<span class="text-sm">🧹</span>
+							<span class="text-xs font-semibold text-gray-300"
+								>Limpiar</span
+							>
+						</button>
+					</div>
+				</div>
+
+				<!-- ─── CARD DE CONTROLES DE COLOR ─── -->
+				<div class="glass-card rounded-2xl p-6 fade-up fade-up-3">
+					<div class="flex items-center justify-between mb-5">
+						<h2 class="text-lg font-semibold text-primary">
+							Controles de Color
+						</h2>
+						<!-- ── BLOQUE 4: Badge de color activo ── -->
+						<span
+							id="active-label"
+							class="px-3 py-1 bg-primary/15 text-primary text-xs rounded-full font-mono"
+						>
+							Fuego
+						</span>
+					</div>
+
+					<!-- ── BLOQUE 4: Botones de color — Paleta Llamas Cósmicas ── -->
+					<div class="grid grid-cols-3 gap-2 mb-5">
+						<button
+							id="btn-fuego"
+							class="color-btn active p-3 rounded-xl bg-orange-500/20 border border-orange-400/30 text-center"
+							onclick="changeColor('#fb923c', 'Fuego', this)"
+							aria-label="Color fuego"
+						>
+							<span
+								class="block w-5 h-5 rounded-full bg-orange-400 mx-auto mb-1 shadow-[0_0_8px_#fb923c]"
+							></span>
+							<p class="text-xs font-semibold text-orange-300">
+								Fuego
+							</p>
+							<p class="text-xs text-orange-300/50 font-mono">
+								#fb923c
+							</p>
+						</button>
+						<button
+							id="btn-coral"
+							class="color-btn p-3 rounded-xl bg-red-500/20 border border-red-400/30 text-center"
+							onclick="changeColor('#f87171', 'Coral', this)"
+							aria-label="Color coral"
+						>
+							<span
+								class="block w-5 h-5 rounded-full bg-red-400 mx-auto mb-1 shadow-[0_0_8px_#f87171]"
+							></span>
+							<p class="text-xs font-semibold text-red-300">Coral</p>
+							<p class="text-xs text-red-300/50 font-mono">#f87171</p>
+						</button>
+						<button
+							id="btn-ambar"
+							class="color-btn p-3 rounded-xl bg-yellow-500/20 border border-yellow-400/30 text-center"
+							onclick="changeColor('#fbbf24', 'Ámbar', this)"
+							aria-label="Color ámbar"
+						>
+							<span
+								class="block w-5 h-5 rounded-full bg-yellow-400 mx-auto mb-1 shadow-[0_0_8px_#fbbf24]"
+							></span>
+							<p class="text-xs font-semibold text-yellow-300">
+								Ámbar
+							</p>
+							<p class="text-xs text-yellow-300/50 font-mono">
+								#fbbf24
+							</p>
+						</button>
+						<button
+							id="btn-rosa"
+							class="color-btn p-3 rounded-xl bg-pink-500/20 border border-pink-400/30 text-center"
+							onclick="changeColor('#f472b6', 'Rosa', this)"
+							aria-label="Color rosa"
+						>
+							<span
+								class="block w-5 h-5 rounded-full bg-pink-400 mx-auto mb-1 shadow-[0_0_8px_#f472b6]"
+							></span>
+							<p class="text-xs font-semibold text-pink-300">Rosa</p>
+							<p class="text-xs text-pink-300/50 font-mono">
+								#f472b6
+							</p>
+						</button>
+						<button
+							id="btn-magenta"
+							class="color-btn p-3 rounded-xl bg-fuchsia-500/20 border border-fuchsia-400/30 text-center"
+							onclick="changeColor('#e879f9', 'Magenta', this)"
+							aria-label="Color magenta"
+						>
+							<span
+								class="block w-5 h-5 rounded-full bg-fuchsia-400 mx-auto mb-1 shadow-[0_0_8px_#e879f9]"
+							></span>
+							<p class="text-xs font-semibold text-fuchsia-300">
+								Magenta
+							</p>
+							<p class="text-xs text-fuchsia-300/50 font-mono">
+								#e879f9
+							</p>
+						</button>
+						<button
+							id="btn-dorado"
+							class="color-btn p-3 rounded-xl bg-amber-500/20 border border-amber-400/30 text-center"
+							onclick="changeColor('#d97706', 'Dorado', this)"
+							aria-label="Color dorado"
+						>
+							<span
+								class="block w-5 h-5 rounded-full bg-amber-600 mx-auto mb-1 shadow-[0_0_8px_#d97706]"
+							></span>
+							<p class="text-xs font-semibold text-amber-300">
+								Dorado
+							</p>
+							<p class="text-xs text-amber-300/50 font-mono">
+								#d97706
+							</p>
+						</button>
+					</div>
+
+					<!-- Separador -->
+					<div class="border-t border-primary/10 pt-4">
+						<!-- Slider de cantidad de partículas al hacer clic -->
+						<div class="flex items-center justify-between mb-2">
+							<label
+								class="text-xs text-on-surface/50 font-mono uppercase tracking-wider"
+							>
+								Partículas / clic
+							</label>
+							<span
+								id="burst-label"
+								class="text-xs text-primary font-mono"
+								>8</span
+							>
+						</div>
+						<input
+							id="burst-slider"
+							type="range"
+							min="1"
+							max="25"
+							value="8"
+							oninput="updateBurst(this.value)"
+							aria-label="Cantidad de partículas por clic"
+						/>
+					</div>
+				</div>
+
+				<!-- ─── STATS EN TIEMPO REAL ─── -->
+				<!-- ── BLOQUE 5: Actualización cada 10 frames ── -->
+				<div class="grid grid-cols-3 gap-3 fade-up fade-up-4">
+					<div class="stat-card rounded-xl p-4 text-center">
+						<p
+							id="star-count"
+							class="text-3xl font-bold text-primary font-mono"
+						>
+							100
+						</p>
+						<p
+							class="text-xs text-on-surface/40 uppercase tracking-wider mt-1"
+						>
+							Estrellas
+						</p>
+					</div>
+
+					<div class="stat-card rounded-xl p-4 text-center">
+						<p
+							id="fps-count"
+							class="text-3xl font-bold text-primary font-mono"
+						>
+							--
+						</p>
+						<p
+							class="text-xs text-on-surface/40 uppercase tracking-wider mt-1"
+						>
+							FPS
+						</p>
+					</div>
+
+					<div class="stat-card rounded-xl p-4 text-center">
+						<p
+							id="mouse-pos"
+							class="text-xl font-bold text-primary font-mono leading-tight pt-1"
+						>
+							0,0
+						</p>
+						<p
+							class="text-xs text-on-surface/40 uppercase tracking-wider mt-1"
+						>
+							Posición
+						</p>
+					</div>
+				</div>
+
+				<!-- ─── INSTRUCCIÓN DE INTERACCIÓN ─── -->
+				<p
+					class="text-center text-on-surface/30 text-xs font-mono fade-up fade-up-5"
+				>
+					clic · arrastra · elige modo · cambia color · explora
+				</p>
+			</div>
+		</main>
+
+		<!-- ── p5.js CDN ── -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+
+		<script>
+			// ==========================================
+			// SECCIÓN 1: CONFIGURACIÓN INICIAL
+			// Autor: Juan Ceballos
+			// Fecha: 28 de marzo de 2026
+			// Propósito: Variables globales y ciclo de vida de p5.js
+			// Personalización: Paleta "Llamas Cósmicas" (naranja/coral/ámbar)
+			// ==========================================
+
+			let estrellas = [];
+			let colorEstrella;
+			let colorActual;
+			let burstCount = 8; // Fase 2: aumentado de 5 a 8
+			let frameCounter = 0; // Optimización: no actualizar DOM cada frame
+			let pausado = false; // Estado de pausa (modo 'apagar')
+
+			// ==========================================
+			// setup() — se ejecuta UNA SOLA VEZ al iniciar
+			// ==========================================
+			function setup() {
+				let canvas = createCanvas(windowWidth, windowHeight);
+				canvas.parent('p5-container'); // Monta el canvas en #p5-container
+
+				colorMode(RGB, 255);
+
+				// Color inicial: naranja fuego (Fase 2: cambiado de #deb7ff a #fb923c)
+				colorEstrella = color(251, 146, 60);
+				colorActual = colorEstrella;
+
+				colorMode(RGB, 255);
+
+				// Crear 100 estrellas de fondo iniciales
+				for (let i = 0; i < 100; i++) {
+					estrellas.push(new Estrella());
+				}
+
+				updateStarCount();
+			}
+
+			// ==========================================
+			// draw() — bucle principal a ~60 fps
+			// ==========================================
+			function draw() {
+				// Fondo con transparencia → efecto de estela naranja-oscuro
+				background(12, 2, 0, 25);
+
+				// Actualizar y dibujar estrellas
+				// Iteramos al REVÉS para eliminar sin saltar índices (Fase 3)
+				for (let i = estrellas.length - 1; i >= 0; i--) {
+					estrellas[i].actualizar();
+					estrellas[i].mostrar();
+
+					if (estrellas[i].estaMuerta()) {
+						estrellas.splice(i, 1);
+					}
+				}
+
+				// Cursor personalizado con color activo
+				noCursor();
+				noFill();
+				stroke(colorActual);
+				strokeWeight(1.5);
+				circle(mouseX, mouseY, 46); // anillo exterior
+				strokeWeight(0.5);
+				circle(mouseX, mouseY, 18); // anillo interior
+				fill(colorActual);
+				noStroke();
+				circle(mouseX, mouseY, 5); // punto central
+
+				// Actualizar DOM solo cada 10 frames (optimización Fase 2)
+				frameCounter++;
+				if (frameCounter % 10 === 0) {
+					updateStats();
+					updateStarCount();
+				}
+			}
+
+			// ==========================================
+			// Interacción: clic lanza ráfaga de partículas
+			// ==========================================
+			function mousePressed() {
+				if (mouseX < 0 || mouseY < 0) return;
+				for (let i = 0; i < burstCount; i++) {
+					estrellas.push(new Estrella(mouseX, mouseY, 'colision'));
+				}
+			}
+
+			// Arrastrar genera estela continua
+			function mouseDragged() {
+				if (frameCount % 3 === 0) {
+					estrellas.push(new Estrella(mouseX, mouseY, 'colision'));
+				}
+			}
+
+			function windowResized() {
+				resizeCanvas(windowWidth, windowHeight);
+			}
+
+			// ==========================================
+			// SECCIÓN 2: MODOS DE VISUALIZACIÓN
+			// Propósito: Cambiar el tipo de galaxia visible
+			// Fase 2: Función creada + modo 'supernova' propio
+			// ==========================================
+			function cambiarModo(modo, btn) {
+				// Actualizar clases de botones activos
+				document
+					.querySelectorAll('.mode-btn')
+					.forEach((b) => b.classList.remove('activo'));
+
+				if (modo === 'nebulosa') {
+					// 80 estrellas normales dispersas (Fase 2)
+					if (btn) btn.classList.add('activo');
+					document.getElementById('modo-label').textContent =
+						'🌌 Nebulosa';
+					for (let i = 0; i < 80; i++) {
+						estrellas.push(new Estrella());
+					}
+				} else if (modo === 'constelacion') {
+					// 15 estrellas grandes y fijas (Fase 2: eVx=0, eVy=0, tamano mayor)
+					if (btn) btn.classList.add('activo');
+					document.getElementById('modo-label').textContent =
+						'✨ Constelación';
+					for (let i = 0; i < 15; i++) {
+						let e = new Estrella();
+						e.tamano = random(4, 10); // Fase 2: rango ampliado
+						e.vx = 0;
+						e.vy = 0;
+						e.baseAlpha = 255;
+						e.alpha = 255;
+						estrellas.push(e);
+					}
+				} else if (modo === 'supernova') {
+					// ── Modo Supernova: creado en Fase 2 ──
+					// 50 partículas muy rápidas lanzadas desde el centro
+					if (btn) btn.classList.add('activo');
+					document.getElementById('modo-label').textContent =
+						'💥 Supernova';
+					for (let i = 0; i < 50; i++) {
+						let e = new Estrella(width / 2, height / 2, 'colision');
+						e.vx = random(-9, 9); // velocidad ×2 respecto a colisión normal
+						e.vy = random(-9, 9);
+						e.tamano = random(2, 7);
+						e.vida = 400; // más vida para cubrir más pantalla
+						estrellas.push(e);
+					}
+				} else if (modo === 'apagar') {
+					// Alternar pausa / reanudación
+					if (!pausado) {
+						noLoop();
+						pausado = true;
+						document.getElementById('apagar-label').textContent =
+							'Reanudar';
+						document.getElementById('modo-label').textContent =
+							'⏸ Pausado';
+						if (btn) btn.classList.add('activo');
+					} else {
+						loop();
+						pausado = false;
+						document.getElementById('apagar-label').textContent =
+							'Pausar';
+						document.getElementById('modo-label').textContent =
+							'Libre';
+					}
+				} else if (modo === 'limpiar') {
+					// Resetea a las 100 estrellas de fondo originales
+					// Fase 3 (corrección): filter por 'normal' no alcanzaba para
+					// limpiar estrellas de Nebulosa/Constelación (también tipo 'normal')
+					estrellas = [];
+					for (let i = 0; i < 100; i++) {
+						estrellas.push(new Estrella());
+					}
+					document.getElementById('modo-label').textContent = 'Libre';
+					updateStarCount();
+				}
+			}
+
+			// ==========================================
+			// SECCIÓN 3: CONTROLES DE COLOR
+			// Propósito: Comunicación bidireccional DOM ↔ p5.js
+			//            HTML llama changeColor() → p5.js actualiza el canvas
+			// ==========================================
+			function changeColor(hexColor, label, btn) {
+				let nuevoColor = color(hexColor);
+				colorActual = nuevoColor;
+				colorEstrella = nuevoColor;
+
+				// Aplicar el color a todas las estrellas existentes
+				for (let e of estrellas) {
+					e.col = nuevoColor;
+				}
+
+				// Actualizar indicadores de UI
+				document.getElementById('active-label').textContent = label;
+
+				let dot = document.getElementById('active-color-dot');
+				dot.style.backgroundColor = hexColor;
+				dot.style.boxShadow = `0 0 10px ${hexColor}`;
+
+				document
+					.querySelectorAll('.color-btn')
+					.forEach((b) => b.classList.remove('active'));
+				btn.classList.add('active');
+			}
+
+			function updateBurst(val) {
+				burstCount = parseInt(val, 10);
+				document.getElementById('burst-label').textContent = val;
+			}
+
+			// ==========================================
+			// SECCIÓN 4: ESTADÍSTICAS EN TIEMPO REAL
+			// Propósito: Actualizar FPS, posición y conteo
+			//            Solo cada 10 frames para no bajar los FPS
+			// ==========================================
+			function updateStats() {
+				let fpsEl = document.getElementById('fps-count');
+				if (fpsEl) fpsEl.textContent = Math.floor(frameRate());
+
+				let posEl = document.getElementById('mouse-pos');
+				if (posEl)
+					posEl.textContent =
+						Math.floor(mouseX) + ',' + Math.floor(mouseY);
+			}
+
+			function updateStarCount() {
+				let el = document.getElementById('star-count');
+				if (el) el.textContent = estrellas.length;
+			}
+
+			// ==========================================
+			// SECCIÓN 2: CLASE ESTRELLA
+			// Propósito: Definir el comportamiento de cada partícula
+			// Fase 2: velocidadBrillo aumentada, glow ×6, tamano mayor
+			//
+			// Métodos:
+			//   constructor(): Crea la estrella con propiedades iniciales según tipo
+			//   actualizar():  Modifica posición y estado cada frame
+			//   mostrar():     Dibuja la estrella en pantalla con halo de brillo
+			//   estaMuerta():  Verifica si debe eliminarse del array
+			// ==========================================
+			class Estrella {
+				/**
+				 * @param {number} x    – posición X (aleatorio si se omite)
+				 * @param {number} y    – posición Y (aleatorio si se omite)
+				 * @param {string} tipo – 'normal' (fondo) | 'colision' (lanzada)
+				 */
+				constructor(x, y, tipo = 'normal') {
+					this.tipo = tipo;
+
+					if (tipo === 'colision') {
+						// Estrella lanzada desde la posición del cursor
+						this.x =
+							(x !== undefined ? x : random(width)) + random(-15, 15);
+						this.y =
+							(y !== undefined ? y : random(height)) +
+							random(-15, 15);
+						this.vx = random(-4, 4);
+						this.vy = random(-4, 4);
+						this.vida = 255;
+						this.tamano = random(1.5, 4.5); // Fase 2: tamaño levemente mayor
+					} else {
+						// Estrella de fondo: estática, parpadea eternamente
+						this.x = random(width);
+						this.y = random(height);
+						this.vx = 0;
+						this.vy = 0;
+						this.vida = -1; // -1 = inmortal
+						this.tamano = random(0.4, 2.5); // Fase 2: ligeramente mayor
+					}
+
+					this.baseAlpha = random(120, 255);
+					this.alpha = this.baseAlpha;
+					// Fase 2: velocidadBrillo aumentada (0.018-0.07 → 0.03-0.1)
+					this.velocidadBrillo = random(0.03, 0.1);
+					this.offsetBrillo = random(TWO_PI);
+					this.col = colorEstrella;
+				}
+
+				// actualizar() — modifica estado cada frame
+				actualizar() {
+					if (this.tipo === 'colision') {
+						this.x += this.vx;
+						this.y += this.vy;
+						this.vx *= 0.97; // Fricción para movimiento natural
+						this.vy *= 0.97;
+						this.vida -= 2.5;
+						this.alpha = this.vida;
+					} else {
+						// Parpadeo sinusoidal para estrellas de fondo
+						this.offsetBrillo += this.velocidadBrillo;
+						this.alpha = this.baseAlpha + sin(this.offsetBrillo) * 60;
+						this.alpha = constrain(this.alpha, 30, 255);
+					}
+				}
+
+				// mostrar() — dibuja la estrella con halo
+				// Fase 2: multiplicador de glow aumentado de ×5 a ×6
+				mostrar() {
+					if (this.alpha <= 0) return;
+
+					noStroke();
+					let r = red(this.col);
+					let g = green(this.col);
+					let b = blue(this.col);
+
+					// Halo exterior (Fase 2: ×6 en lugar de ×5)
+					if (this.tamano > 1.5 || this.tipo === 'colision') {
+						fill(r, g, b, this.alpha * 0.15);
+						circle(this.x, this.y, this.tamano * 6);
+					}
+
+					// Núcleo principal
+					fill(r, g, b, this.alpha);
+					circle(this.x, this.y, this.tamano);
+				}
+
+				// estaMuerta() — retorna true solo para colisiones sin vida
+				estaMuerta() {
+					return this.tipo === 'colision' && this.vida <= 0;
+				}
+			}
+		</script>
+
+		<!--
+		==========================================
+		GUÍA DE USUARIO — MI GALAXIA v1.0
+		Por: Juan Ceballos
+		Fecha: 28 de marzo de 2026
+		Asignatura: Diseño Web Interactivo
+
+		CÓMO USAR:
+		1. "Nebulosa"     → agrega 80 estrellas pequeñas dispersas por todo el canvas
+		2. "Constelación" → agrega 15 estrellas grandes y estáticas (sin velocidad)
+		3. "Supernova"    → lanza 50 partículas muy rápidas desde el centro de pantalla
+		4. "Pausar"       → detiene la animación; mismo botón para reanudar
+		5. "Limpiar"      → elimina las estrellas de colisión, las de fondo quedan
+		6. Clic en canvas → crea explosión de partículas (ajustar cantidad con slider)
+		7. Arrastrar      → genera estela continua de partículas
+		8. Botones color  → cambian cursor, nuevas partículas y estrellas existentes
+
+		PERSONALIZACIONES REALIZADAS (Fase 2):
+		- Paleta "Llamas Cósmicas": naranja, coral, ámbar, rosa, magenta, dorado
+		  → Antes: púrpura (#deb7ff) y variantes azul/verde/amarillo
+		- Burst por clic: aumentado de 5 a 8 partículas por defecto
+		- velocidadBrillo: 0.03-0.1 (antes 0.018-0.07) → parpadeo más dinámico
+		- Glow multiplicador: ×6 (antes ×5) → halos más visibles
+		- Tamaños: normales hasta 2.5 (antes 2.2), colisión hasta 4.5 (antes 4)
+		- Modo Supernova: 50 partículas desde el centro con velocidad ×2
+		- Modo Constelación: estrellas fijas de 4-10px con alpha máximo (255)
+
+		CRÉDITOS:
+		Basado en guía de clase "Cosmos Interactivo" — p5js_tailwind.html
+		Tecnologías: HTML5, Tailwind CSS v3 (CDN), p5.js v1.9.4
+		==========================================
+		--></body>
+</html>

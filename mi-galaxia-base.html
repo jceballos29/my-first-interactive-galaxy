@@ -1,0 +1,823 @@
+<!doctype html>
+<html class="dark" lang="es">
+	<head>
+		<meta charset="utf-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0"
+		/>
+		<title>Cosmos Interactivo — p5.js + Tailwind</title>
+
+		<!-- ── BLOQUE 0: Tailwind CDN ── -->
+		<script src="https://cdn.tailwindcss.com"></script>
+
+		<!-- ── BLOQUE 0: Configuración del tema "Cosmos" ── -->
+		<script>
+			tailwind.config = {
+				darkMode: 'class',
+				theme: {
+					extend: {
+						colors: {
+							surface: '#170d2c',
+							primary: '#deb7ff',
+							'on-surface': '#eaddff',
+							'surface-variant': '#3a2f50',
+						},
+						fontFamily: {
+							sans: ['Inter', 'system-ui', 'sans-serif'],
+							mono: ['Fira Code', 'monospace'],
+						},
+					},
+				},
+			};
+		</script>
+
+		<!-- Fuentes -->
+		<link
+			href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;800&display=swap"
+			rel="stylesheet"
+		/>
+
+		<style>
+			/* ── BLOQUE 0: Estilos base ── */
+			html {
+				scroll-behavior: smooth;
+			}
+
+			/* Glow effect para el título */
+			.title-glow {
+				text-shadow:
+					0 0 40px rgba(222, 183, 255, 0.6),
+					0 0 80px rgba(222, 183, 255, 0.3);
+			}
+
+			/* Glassmorphism card */
+			.glass-card {
+				background: rgba(58, 47, 80, 0.55);
+				backdrop-filter: blur(20px);
+				-webkit-backdrop-filter: blur(20px);
+				border: 1px solid rgba(222, 183, 255, 0.18);
+				box-shadow:
+					0 8px 40px rgba(123, 44, 191, 0.25),
+					inset 0 1px 0 rgba(255, 255, 255, 0.07);
+			}
+
+			/* Botones de color con ring de foco visible */
+			.color-btn {
+				transition:
+					transform 0.15s ease,
+					box-shadow 0.15s ease;
+				position: relative;
+				overflow: hidden;
+			}
+			.color-btn::after {
+				content: '';
+				position: absolute;
+				inset: 0;
+				background: rgba(255, 255, 255, 0.08);
+				opacity: 0;
+				transition: opacity 0.15s;
+			}
+			.color-btn:hover::after {
+				opacity: 1;
+			}
+			.color-btn:hover {
+				transform: translateY(-2px) scale(1.03);
+			}
+			.color-btn:active {
+				transform: translateY(0) scale(0.97);
+			}
+			.color-btn.active {
+				box-shadow: 0 0 0 3px rgba(222, 183, 255, 0.7);
+			}
+
+			/* Badge de paso */
+			.step-badge {
+				font-size: 0.6rem;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+			}
+
+			/* Botón de modo galaxia */
+			.mode-btn {
+				transition: all 0.2s ease;
+				position: relative;
+				overflow: hidden;
+			}
+			.mode-btn::after {
+				content: '';
+				position: absolute;
+				inset: 0;
+				background: rgba(255, 255, 255, 0.07);
+				opacity: 0;
+				transition: opacity 0.15s;
+			}
+			.mode-btn:hover::after {
+				opacity: 1;
+			}
+			.mode-btn:hover {
+				transform: translateY(-2px);
+			}
+			.mode-btn:active {
+				transform: scale(0.95);
+			}
+			.mode-btn.activo {
+				box-shadow:
+					0 0 0 2px rgba(222, 183, 255, 0.9),
+					0 0 14px rgba(222, 183, 255, 0.3);
+			}
+
+			/* Stat card */
+			.stat-card {
+				background: rgba(58, 47, 80, 0.4);
+				border: 1px solid rgba(222, 183, 255, 0.12);
+				transition: border-color 0.3s;
+			}
+			.stat-card:hover {
+				border-color: rgba(222, 183, 255, 0.35);
+			}
+
+			/* Canvas ocupa toda la pantalla de fondo */
+			#p5-container canvas {
+				display: block !important;
+			}
+
+			/* Animación de entrada */
+			@keyframes fadeUp {
+				from {
+					opacity: 0;
+					transform: translateY(24px);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
+			}
+			.fade-up {
+				animation: fadeUp 0.7s ease both;
+			}
+			.fade-up-1 {
+				animation-delay: 0.1s;
+			}
+			.fade-up-2 {
+				animation-delay: 0.25s;
+			}
+			.fade-up-3 {
+				animation-delay: 0.4s;
+			}
+			.fade-up-4 {
+				animation-delay: 0.55s;
+			}
+
+			/* Indicador de color activo en header */
+			#active-color-dot {
+				transition: background-color 0.3s ease;
+				box-shadow: 0 0 8px currentColor;
+			}
+
+			/* Slider de partículas */
+			input[type='range'] {
+				-webkit-appearance: none;
+				width: 100%;
+				height: 4px;
+				border-radius: 2px;
+				background: rgba(222, 183, 255, 0.2);
+				outline: none;
+			}
+			input[type='range']::-webkit-slider-thumb {
+				-webkit-appearance: none;
+				width: 16px;
+				height: 16px;
+				border-radius: 50%;
+				background: #deb7ff;
+				cursor: pointer;
+				box-shadow: 0 0 6px rgba(222, 183, 255, 0.6);
+			}
+			input[type='range']::-moz-range-thumb {
+				width: 16px;
+				height: 16px;
+				border-radius: 50%;
+				background: #deb7ff;
+				cursor: pointer;
+				border: none;
+			}
+		</style>
+	</head>
+
+	<!-- ── BLOQUE 0: Body con tema oscuro ── -->
+	<body
+		class="bg-surface text-on-surface min-h-screen overflow-x-hidden font-sans"
+	>
+		<!-- ── BLOQUE 1: Contenedor para p5.js (canvas de fondo) ── -->
+		<div id="p5-container" class="fixed inset-0 -z-10"></div>
+
+		<!-- ── BLOQUES 0-5: Interfaz por encima del canvas ── -->
+		<main
+			class="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-16"
+		>
+			<div class="w-full max-w-xl space-y-6">
+				<!-- ─── HEADER ─── -->
+				<div class="text-center space-y-3 fade-up fade-up-1">
+					<div class="flex items-center justify-center gap-2 mb-1">
+						<!-- Indicador de color activo -->
+						<span
+							id="active-color-dot"
+							class="inline-block w-3 h-3 rounded-full bg-primary"
+						></span>
+						<span
+							class="text-on-surface/50 text-sm font-mono step-badge"
+							>p5.js + Tailwind CSS</span
+						>
+					</div>
+
+					<h1
+						class="text-6xl md:text-7xl font-extrabold text-primary title-glow tracking-tight"
+					>
+						Cosmos
+					</h1>
+					<p
+						class="text-on-surface/70 text-base max-w-sm mx-auto leading-relaxed"
+					>
+						Mueve el cursor y haz
+						<strong class="text-primary">clic</strong> para lanzar
+						estrellas. Usa los controles para cambiar el color.
+					</p>
+				</div>
+
+				<!-- ─── CARD DE MODOS ─── -->
+				<div class="glass-card rounded-2xl p-5 fade-up fade-up-2">
+					<div class="flex items-center justify-between mb-4">
+						<h2 class="text-base font-semibold text-primary">
+							Modos de Galaxia
+						</h2>
+						<span
+							id="modo-label"
+							class="px-3 py-1 bg-primary/15 text-primary text-xs rounded-full font-mono"
+							>Libre</span
+						>
+					</div>
+					<div class="grid grid-cols-2 gap-2 mb-2">
+						<button
+							id="btn-nebulosa"
+							class="mode-btn py-3 px-2 rounded-xl bg-blue-500/15 border border-blue-400/25 text-center"
+							onclick="cambiarModo('nebulosa', this)"
+							aria-label="Modo Nebulosa"
+						>
+							<span class="block text-lg mb-1">🌌</span>
+							<span class="text-xs font-semibold text-blue-300"
+								>Nebulosa</span
+							>
+						</button>
+						<button
+							id="btn-constelacion"
+							class="mode-btn py-3 px-2 rounded-xl bg-yellow-500/15 border border-yellow-400/25 text-center"
+							onclick="cambiarModo('constelacion', this)"
+							aria-label="Modo Constelación"
+						>
+							<span class="block text-lg mb-1">✨</span>
+							<span class="text-xs font-semibold text-yellow-300"
+								>Constelación</span
+							>
+						</button>
+					</div>
+					<div class="grid grid-cols-2 gap-2">
+						<button
+							id="btn-apagar"
+							class="mode-btn py-2 px-3 rounded-xl bg-red-500/15 border border-red-400/25 flex items-center justify-center gap-2"
+							onclick="cambiarModo('apagar', this)"
+							aria-label="Pausar animación"
+						>
+							<span class="text-sm">⏸</span>
+							<span
+								class="text-xs font-semibold text-red-300"
+								id="apagar-label"
+								>Pausar</span
+							>
+						</button>
+						<button
+							id="btn-limpiar"
+							class="mode-btn py-2 px-3 rounded-xl bg-gray-500/15 border border-gray-400/25 flex items-center justify-center gap-2"
+							onclick="cambiarModo('limpiar', this)"
+							aria-label="Limpiar partículas"
+						>
+							<span class="text-sm">🧹</span>
+							<span class="text-xs font-semibold text-gray-300"
+								>Limpiar</span
+							>
+						</button>
+					</div>
+				</div>
+
+				<!-- ─── CARD DE CONTROLES ─── -->
+				<div class="glass-card rounded-2xl p-6 fade-up fade-up-3">
+					<div class="flex items-center justify-between mb-5">
+						<h2 class="text-lg font-semibold text-primary">
+							Controles de Color
+						</h2>
+						<!-- ── BLOQUE 4: Badge de color activo ── -->
+						<span
+							id="active-label"
+							class="px-3 py-1 bg-primary/15 text-primary text-xs rounded-full font-mono"
+						>
+							Primario
+						</span>
+					</div>
+
+					<!-- ── BLOQUE 4: Botones de color ── -->
+					<div class="grid grid-cols-2 gap-3 mb-5">
+						<button
+							id="btn-primary"
+							class="color-btn active p-4 rounded-xl bg-purple-500/20 border border-purple-400/30 text-left"
+							onclick="changeColor('#deb7ff', 'Primario', this)"
+							aria-label="Color primario morado"
+						>
+							<div class="flex items-center gap-3">
+								<span
+									class="w-5 h-5 rounded-full bg-[#deb7ff] flex-shrink-0 shadow-[0_0_8px_#deb7ff]"
+								></span>
+								<div>
+									<p class="font-semibold text-purple-200">
+										Primario
+									</p>
+									<p class="text-xs text-purple-300/60 font-mono">
+										#deb7ff
+									</p>
+								</div>
+							</div>
+						</button>
+
+						<button
+							id="btn-rojo"
+							class="color-btn p-4 rounded-xl bg-red-500/20 border border-red-400/30 text-left"
+							onclick="changeColor('#f87171', 'Rojo', this)"
+							aria-label="Color rojo"
+						>
+							<div class="flex items-center gap-3">
+								<span
+									class="w-5 h-5 rounded-full bg-red-400 flex-shrink-0 shadow-[0_0_8px_#f87171]"
+								></span>
+								<div>
+									<p class="font-semibold text-red-300">Rojo</p>
+									<p class="text-xs text-red-300/60 font-mono">
+										#f87171
+									</p>
+								</div>
+							</div>
+						</button>
+
+						<button
+							id="btn-teal"
+							class="color-btn p-4 rounded-xl bg-teal-500/20 border border-teal-400/30 text-left"
+							onclick="changeColor('#2dd4bf', 'Teal', this)"
+							aria-label="Color teal"
+						>
+							<div class="flex items-center gap-3">
+								<span
+									class="w-5 h-5 rounded-full bg-teal-400 flex-shrink-0 shadow-[0_0_8px_#2dd4bf]"
+								></span>
+								<div>
+									<p class="font-semibold text-teal-300">Teal</p>
+									<p class="text-xs text-teal-300/60 font-mono">
+										#2dd4bf
+									</p>
+								</div>
+							</div>
+						</button>
+
+						<button
+							id="btn-amarillo"
+							class="color-btn p-4 rounded-xl bg-yellow-500/20 border border-yellow-400/30 text-left"
+							onclick="changeColor('#fbbf24', 'Amarillo', this)"
+							aria-label="Color amarillo"
+						>
+							<div class="flex items-center gap-3">
+								<span
+									class="w-5 h-5 rounded-full bg-yellow-400 flex-shrink-0 shadow-[0_0_8px_#fbbf24]"
+								></span>
+								<div>
+									<p class="font-semibold text-yellow-300">
+										Amarillo
+									</p>
+									<p class="text-xs text-yellow-300/60 font-mono">
+										#fbbf24
+									</p>
+								</div>
+							</div>
+						</button>
+
+						<button
+							id="btn-verde"
+							class="color-btn p-4 rounded-xl bg-green-500/20 border border-green-400/30 text-left"
+							onclick="changeColor('#4ade80', 'Verde', this)"
+							aria-label="Color verde"
+						>
+							<div class="flex items-center gap-3">
+								<span
+									class="w-5 h-5 rounded-full bg-green-400 flex-shrink-0 shadow-[0_0_8px_#4ade80]"
+								></span>
+								<div>
+									<p class="font-semibold text-green-300">Verde</p>
+									<p class="text-xs text-green-300/60 font-mono">
+										#4ade80
+									</p>
+								</div>
+							</div>
+						</button>
+
+						<button
+							id="btn-naranja"
+							class="color-btn p-4 rounded-xl bg-orange-500/20 border border-orange-400/30 text-left"
+							onclick="changeColor('#fb923c', 'Naranja', this)"
+							aria-label="Color naranja"
+						>
+							<div class="flex items-center gap-3">
+								<span
+									class="w-5 h-5 rounded-full bg-orange-400 flex-shrink-0 shadow-[0_0_8px_#fb923c]"
+								></span>
+								<div>
+									<p class="font-semibold text-orange-300">Naranja</p>
+									<p class="text-xs text-orange-300/60 font-mono">
+										#fb923c
+									</p>
+								</div>
+							</div>
+						</button>
+					</div>
+
+					<!-- Separador -->
+					<div class="border-t border-primary/10 pt-4">
+						<!-- Slider de cantidad de partículas al hacer clic -->
+						<div class="flex items-center justify-between mb-2">
+							<label
+								class="text-xs text-on-surface/50 font-mono uppercase tracking-wider"
+							>
+								Partículas / clic
+							</label>
+							<span
+								id="burst-label"
+								class="text-xs text-primary font-mono"
+								>5</span
+							>
+						</div>
+						<input
+							id="burst-slider"
+							type="range"
+							min="1"
+							max="20"
+							value="5"
+							oninput="updateBurst(this.value)"
+							aria-label="Cantidad de partículas por clic"
+						/>
+					</div>
+				</div>
+
+				<!-- ─── STATS EN TIEMPO REAL ─── -->
+				<!-- ── BLOQUE 5: Actualización cada 10 frames ── -->
+				<div class="grid grid-cols-3 gap-3 fade-up fade-up-4">
+					<div class="stat-card rounded-xl p-4 text-center">
+						<p
+							id="star-count"
+							class="text-3xl font-bold text-primary font-mono"
+						>
+							100
+						</p>
+						<p
+							class="text-xs text-on-surface/40 uppercase tracking-wider mt-1"
+						>
+							Estrellas
+						</p>
+					</div>
+
+					<div class="stat-card rounded-xl p-4 text-center">
+						<p
+							id="fps-count"
+							class="text-3xl font-bold text-primary font-mono"
+						>
+							--
+						</p>
+						<p
+							class="text-xs text-on-surface/40 uppercase tracking-wider mt-1"
+						>
+							FPS
+						</p>
+					</div>
+
+					<div class="stat-card rounded-xl p-4 text-center">
+						<p
+							id="mouse-pos"
+							class="text-xl font-bold text-primary font-mono leading-tight pt-1"
+						>
+							0,0
+						</p>
+						<p
+							class="text-xs text-on-surface/40 uppercase tracking-wider mt-1"
+						>
+							Posición
+						</p>
+					</div>
+				</div>
+
+				<!-- ─── INSTRUCCIÓN DE INTERACCIÓN ─── -->
+				<p
+					class="text-center text-on-surface/30 text-xs font-mono fade-up fade-up-4"
+				>
+					click · arrastra · cambia colores · disfruta
+				</p>
+			</div>
+		</main>
+
+		<!-- ── BLOQUE 1: p5.js CDN (antes del script principal) ── -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+
+		<script>
+			// ============================================================
+			// BLOQUE 1: Variables globales + setup básico
+			// ============================================================
+			let stars = [];
+			let starColor;
+			let currentColor;
+			let burstCount = 5; // Partículas por clic (controlado por slider)
+			let frameCounter = 0; // Optimización DOM (Bloque 5)
+
+			// ============================================================
+			// BLOQUE 1: setup() — crea canvas y lo inserta en #p5-container
+			// ============================================================
+			function setup() {
+				let canvas = createCanvas(windowWidth, windowHeight);
+				canvas.parent('p5-container');
+
+				// Color inicial: primario morado
+				starColor = color(222, 183, 255);
+				currentColor = starColor;
+
+				colorMode(RGB, 255);
+
+				// ── BLOQUE 2: Crear 100 estrellas de fondo (estado inicial)
+				for (let i = 0; i < 100; i++) {
+					stars.push(new Star());
+				}
+
+				updateStarCount();
+			}
+
+			// ============================================================
+			// BLOQUE 1: draw() — bucle principal a ~60 fps
+			// ============================================================
+			function draw() {
+				// Fondo semitransparente → efecto de trail
+				background(23, 13, 44, 28);
+
+				// ── BLOQUE 2 + 4: Actualizar y dibujar estrellas
+				// ── BLOQUE 5: Iterar al revés para eliminar sin saltar índices
+				for (let i = stars.length - 1; i >= 0; i--) {
+					stars[i].update();
+					stars[i].display();
+
+					if (stars[i].isDead()) {
+						stars.splice(i, 1);
+					}
+				}
+
+				// ── BLOQUE 3: Cursor personalizado
+				noCursor();
+				noFill();
+				stroke(currentColor);
+				strokeWeight(1.5);
+				circle(mouseX, mouseY, 44); // anillo exterior
+				strokeWeight(0.5);
+				circle(mouseX, mouseY, 20); // anillo interior
+				fill(currentColor);
+				noStroke();
+				circle(mouseX, mouseY, 5); // punto central
+
+				// ── BLOQUE 5: Actualizar DOM solo cada 10 frames
+				frameCounter++;
+				if (frameCounter % 10 === 0) {
+					updateStats();
+					updateStarCount();
+				}
+			}
+
+			// ============================================================
+			// BLOQUE 3: Interacción — clic emite ráfaga de estrellas
+			// ============================================================
+			function mousePressed() {
+				// Evitar que interfiera con los clics en la UI (card)
+				if (mouseX < 0 || mouseY < 0) return;
+				for (let i = 0; i < burstCount; i++) {
+					stars.push(new Star(mouseX, mouseY, true));
+				}
+			}
+
+			// ── BLOQUE 3: Arrastrar también emite partículas
+			function mouseDragged() {
+				if (frameCount % 3 === 0) {
+					stars.push(new Star(mouseX, mouseY, true));
+				}
+			}
+
+			// ── BLOQUE 1: Resize responsivo
+			function windowResized() {
+				resizeCanvas(windowWidth, windowHeight);
+			}
+
+			// ============================================================
+			// MODOS DE GALAXIA: cambiarModo()
+			// Controla los diferentes estados visuales de la galaxia
+			// Llamado desde los botones HTML (comunicación DOM → p5.js)
+			// ============================================================
+			let pausado = false;
+
+			function cambiarModo(modo, btn) {
+				document
+					.querySelectorAll('.mode-btn')
+					.forEach((b) => b.classList.remove('activo'));
+
+				if (modo === 'nebulosa') {
+					if (btn) btn.classList.add('activo');
+					document.getElementById('modo-label').textContent =
+						'🌌 Nebulosa';
+					// Agregar 80 estrellas de fondo distribuidas por la pantalla
+					for (let i = 0; i < 80; i++) {
+						stars.push(new Star());
+					}
+				} else if (modo === 'constelacion') {
+					if (btn) btn.classList.add('activo');
+					document.getElementById('modo-label').textContent =
+						'✨ Constelación';
+					// 15 estrellas grandes y fijas (sin velocidad)
+					for (let i = 0; i < 15; i++) {
+						let s = new Star();
+						s.size = random(4, 10);
+						s.vx = 0;
+						s.vy = 0;
+						s.baseAlpha = 255;
+						s.alpha = 255;
+						stars.push(s);
+					}
+				} else if (modo === 'apagar') {
+					// Alternar pausa / reanudación
+					if (!pausado) {
+						noLoop();
+						pausado = true;
+						document.getElementById('apagar-label').textContent =
+							'Reanudar';
+						document.getElementById('modo-label').textContent =
+							'⏸ Pausado';
+						if (btn) btn.classList.add('activo');
+					} else {
+						loop();
+						pausado = false;
+						document.getElementById('apagar-label').textContent =
+							'Pausar';
+						document.getElementById('modo-label').textContent =
+							'Libre';
+					}
+				} else if (modo === 'limpiar') {
+					// Elimina solo las estrellas de colisión, conserva las de fondo
+					stars = stars.filter((s) => !s.isNew);
+					document.getElementById('modo-label').textContent = 'Libre';
+				}
+			}
+
+			// ============================================================
+			// BLOQUE 4: changeColor() — llamado desde los botones HTML
+			//           Comunicación DOM → p5.js
+			// ============================================================
+			function changeColor(hexColor, label, btn) {
+				let newColor = color(hexColor);
+				currentColor = newColor;
+				starColor = newColor;
+
+				// Actualizar estrellas existentes
+				for (let star of stars) {
+					star.col = newColor;
+				}
+
+				// ─ Actualizar UI ─
+				document.getElementById('active-label').textContent = label;
+
+				// Punto de color en el header
+				let dot = document.getElementById('active-color-dot');
+				dot.style.backgroundColor = hexColor;
+				dot.style.boxShadow = `0 0 10px ${hexColor}`;
+
+				// Marcar botón activo
+				document
+					.querySelectorAll('.color-btn')
+					.forEach((b) => b.classList.remove('active'));
+				btn.classList.add('active');
+			}
+
+			// ============================================================
+			// BLOQUE 4: Slider — cantidad de partículas por clic
+			// ============================================================
+			function updateBurst(val) {
+				burstCount = parseInt(val, 10);
+				document.getElementById('burst-label').textContent = val;
+			}
+
+			// ============================================================
+			// BLOQUE 5: updateStats() — FPS y posición del mouse
+			//           Comunicado desde draw() cada 10 frames
+			// ============================================================
+			function updateStats() {
+				let fpsEl = document.getElementById('fps-count');
+				if (fpsEl) fpsEl.textContent = Math.floor(frameRate());
+
+				let posEl = document.getElementById('mouse-pos');
+				if (posEl)
+					posEl.textContent =
+						Math.floor(mouseX) + ',' + Math.floor(mouseY);
+			}
+
+			function updateStarCount() {
+				let el = document.getElementById('star-count');
+				if (el) el.textContent = stars.length;
+			}
+
+			// ============================================================
+			// BLOQUE 2: Clase Star — el corazón del sistema de partículas
+			// ============================================================
+			class Star {
+				/**
+				 * @param {number}  x      – posición X (omitir para estrella de fondo)
+				 * @param {number}  y      – posición Y (omitir para estrella de fondo)
+				 * @param {boolean} isNew  – true = estrella lanzada por el usuario
+				 */
+				constructor(x, y, isNew = false) {
+					this.isNew = isNew;
+
+					if (isNew) {
+						// ── BLOQUE 3: Estrella lanzada desde el cursor ──
+						this.x = x + random(-15, 15);
+						this.y = y + random(-15, 15);
+						this.vx = random(-4, 4);
+						this.vy = random(-4, 4);
+						this.life = 255;
+						// Tamaño mayor para las estrellas nuevas
+						this.size = random(1.5, 4);
+					} else {
+						// ── BLOQUE 2: Estrella de fondo (estática, parpadea) ──
+						this.x = random(width);
+						this.y = random(height);
+						this.vx = 0;
+						this.vy = 0;
+						this.life = -1; // -1 = vive para siempre
+						this.size = random(0.4, 2.2);
+					}
+
+					// Propiedades comunes
+					this.baseAlpha = random(120, 255);
+					this.alpha = this.baseAlpha;
+					this.twinkleSpeed = random(0.018, 0.07);
+					this.twinkleOff = random(TWO_PI);
+					this.col = starColor; // hereda el color global actual
+				}
+
+				// ─ BLOQUE 2 / BLOQUE 5: lógica de actualización ─
+				update() {
+					if (this.isNew) {
+						// Movimiento con fricción (Bloque 5)
+						this.x += this.vx;
+						this.y += this.vy;
+						this.vx *= 0.97;
+						this.vy *= 0.97;
+						this.life -= 2.5;
+						this.alpha = this.life;
+					} else {
+						// Parpadeo sinusoidal para estrellas de fondo
+						this.twinkleOff += this.twinkleSpeed;
+						this.alpha = this.baseAlpha + sin(this.twinkleOff) * 55;
+						this.alpha = constrain(this.alpha, 40, 255);
+					}
+				}
+
+				// ─ BLOQUE 2: renderizado ─
+				display() {
+					if (this.alpha <= 0) return;
+
+					noStroke();
+					let r = red(this.col);
+					let g = green(this.col);
+					let b = blue(this.col);
+
+					// Halo suave para estrellas brillantes o nuevas
+					if (this.size > 1.5 || this.isNew) {
+						fill(r, g, b, this.alpha * 0.18);
+						circle(this.x, this.y, this.size * 5);
+					}
+
+					// Cuerpo principal
+					fill(r, g, b, this.alpha);
+					circle(this.x, this.y, this.size);
+				}
+
+				// ─ BLOQUE 4 / BLOQUE 5: gestión del ciclo de vida ─
+				isDead() {
+					return this.isNew && this.life <= 0;
+				}
+			}
+		</script>
+	</body>
+</html>
